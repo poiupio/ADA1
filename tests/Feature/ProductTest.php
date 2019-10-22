@@ -1,4 +1,5 @@
 <?php
+
 namespace Tests\Feature;
 
 use App\Product;
@@ -10,7 +11,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class ProductTest extends TestCase
 {
     use RefreshDatabase;
-    
+
+
+/**
+*Prueba que valida que se ha creado un producto exitósamente
+**/
     public function test_client_can_create_a_product()
     {
         // Given
@@ -25,7 +30,7 @@ class ProductTest extends TestCase
         // Then
         // Assert it sends the correct HTTP Status
         $response->assertStatus(201);
-        
+
         // Assert the response has the correct structure
         $response->assertJsonStructure([
             'id',
@@ -39,7 +44,7 @@ class ProductTest extends TestCase
             'name' => 'Super Product',
             'price' => '23.30'
         ]);
-        
+
         $body = $response->decodeResponseJson();
 
         // Assert product is on the database
@@ -53,10 +58,48 @@ class ProductTest extends TestCase
         );
     }
 
-    public function test_client_create_a_nameless_product()
-    {
-        // Given
+/**
+*Prueba que valida que se puede actualizar un artículo
+**/
+public function test_client_can_update_a_product(){
+     $productData = [
+            'name' => 'Super Product',
+            'price' => '23.30'
+        ];
+
+    $response = $this->json('POST', '/api/products', $productData); 
+
+    $response->assertStatus(201);
+    
+    $body = $response->decodeResponseJson();
+    
+    $newProductData = [
+            'name' => 'Superman',
+            'price' => '300'
+        ];
+
+    $newResponse = $this->json('PUT', '/api/products/' . $body['id'], $newProductData);
+
+    $this->assertDatabaseHas(
+            'products',
+            [
+                'id' => $body['id'],
+                'name' => 'Superman',
+                'price' => '300'
+            ]
+        );
+    $response->assertStatus(201);
+
+
+}
+
+/**
+*Prueba que valida que se eliminó un artículo correctamente
+**/
+public function test_client_can_delete_a_product(){
+      // Given
         $productData = [
+            'name' => 'Super Product',
             'price' => '23.30'
         ];
 
@@ -65,592 +108,89 @@ class ProductTest extends TestCase
 
         // Then
         // Assert it sends the correct HTTP Status
-        $response->assertStatus(422);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'code',
-            'title'
-        ]);
+        $response->assertStatus(201);
 
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'code' => 'ERROR-1',
-            'title' => 'Unprocessable Entity'
-        ]);
-        
-    }
 
-    public function test_client_create_a_priceless_product()
-    {
-        // Given
-        $productData = [
-            'name' => 'Super Product'
+
+        $body = $response->decodeResponseJson();
+
+        // Assert product is on the database
+        $this->assertDatabaseHas(
+            'products',
+            [
+                'id' => $body['id'],
+                'name' => 'Super Product',
+                'price' => '23.30'
+            ]
+        );
+        $responseDelete = $this->json('DELETE', '/api/products/' . $body['id']);
+        $responseDelete->assertStatus(200);
+}
+
+/**
+*Prueba que valida que se muestran todos los articulos
+**/
+    public function test_client_can_see_all(){
+          $productData = [
+
+         'name' => 'Super Product',
+            'price' => '23.30'
+          
         ];
+         $response = $this->json('POST', '/api/products', $productData); 
 
-        // When
-        $response = $this->json('POST', '/api/products', $productData); 
 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(422);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'code',
-            'title'
-        ]);
+       
 
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'code' => 'ERROR-1',
-            'title' => 'Unprocessable Entity'
-        ]);
+          $response = $this->json('GET', '/api/products');
+            $response->assertStatus(200); 
+
     }
 
-    public function test_client_create_a_negative_price_product()
-    {
-        // Given
+/**
+*Prueba que valida que se muestra un artìculo
+**/
+	public function test_client_can_see_a_product(){
+           // Given
         $productData = [
             'name' => 'Super Product',
-            'price' => '-10'
+            'price' => '23.30'
         ];
 
         // When
         $response = $this->json('POST', '/api/products', $productData); 
 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(422);
-        
+ 
         // Assert the response has the correct structure
         $response->assertJsonStructure([
-            'code',
-            'title'
+            'id',
+            'name',
+            'price'
         ]);
 
         // Assert the product was created
         // with the correct data
         $response->assertJsonFragment([
-            'code' => 'ERROR-1',
-            'title' => 'Unprocessable Entity'
+            'name' => 'Super Product',
+            'price' => '23.30'
         ]);
-    }
 
+        $body = $response->decodeResponseJson();
+
+        $response = $this->json('GET', '/api/products/' . $body['id']);
+
+        // Assert product is on the database
+       $this->assertDatabaseHas(
+            'products',
+            [
+                'id' => $body['id'],
+                'name' => 'Super Product',
+                'price' => '23.30'
+            ]
+        );
+   
+    $response->assertStatus(200); 
+	}
     
 
-    public function test_client_show_all()
-    {
-        // Given
-        $productData = [
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ];
-
-        // When
-        $response = $this->json('POST', '/api/products', $productData); 
-
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(201);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ]);
-        
-        $body = $response->decodeResponseJson();
-
-        // Assert product is on the database
-        $this->assertDatabaseHas(
-            'products',
-            [
-                'id' => $body['id'],
-                'name' => 'Super Product',
-                'price' => '23.30'
-            ]
-        );
-
-        $response = $this->json('GET', '/api/products'); 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(200);
-        
-        $body = $response->decodeResponseJson();
-    }
-
-    public function test_client_show_product()
-    {
-        // Given
-        $productData = [
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ];
-
-        // When
-        $response = $this->json('POST', '/api/products', $productData); 
-
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(201);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ]);
-        
-        $body = $response->decodeResponseJson();
-
-        // Assert product is on the database
-        $this->assertDatabaseHas(
-            'products',
-            [
-                'id' => $body['id'],
-                'name' => 'Super Product',
-                'price' => '23.30'
-            ]
-        );
-
-        $response = $this->json('GET', '/api/products/3'); 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(200);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ]);
-
-        $body = $response->decodeResponseJson();
-    }
-
-    public function test_client_show_inexistent_product()
-    {
-        // Given
-        $productData = [
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ];
-
-        // When
-        $response = $this->json('POST', '/api/products', $productData); 
-
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(201);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ]);
-        
-        $body = $response->decodeResponseJson();
-
-        // Assert product is on the database
-        $this->assertDatabaseHas(
-            'products',
-            [
-                'id' => $body['id'],
-                'name' => 'Super Product',
-                'price' => '23.30'
-            ]
-        );
-
-        $response = $this->json('GET', '/api/products/30'); 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(404);
-
-         // Assert the response has the correct structure
-         $response->assertJsonStructure([
-            'code',
-            'title'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'code' => 'ERROR-2',
-            'title' => 'Not Found'
-        ]);
-
-        $body = $response->decodeResponseJson();
-    }
-
-    public function test_client_edit_product()
-    {
-        // Given
-        $productData = [
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ];
-
-        // When
-        $response = $this->json('POST', '/api/products', $productData); 
-
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(201);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ]);
-        
-        $body = $response->decodeResponseJson();
-
-        // Assert product is on the database
-        $this->assertDatabaseHas(
-            'products',
-            [
-                'id' => $body['id'],
-                'name' => 'Super Product',
-                'price' => '23.30'
-            ]
-        );
-
-
-        $productData2 = [
-            'name' => 'cool product',
-            'price' => '10'
-        ];
-
-        $response = $this->json('put', '/api/products/4',$productData2); 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(200);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'cool product',
-            'price' => '10'
-        ]);
-
-        $body = $response->decodeResponseJson();
-    }
-
-    public function test_client_edit_inexistent_product()
-    {
-        // Given
-        $productData = [
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ];
-
-        // When
-        $response = $this->json('POST', '/api/products', $productData); 
-
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(201);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ]);
-        
-        $body = $response->decodeResponseJson();
-
-        // Assert product is on the database
-        $this->assertDatabaseHas(
-            'products',
-            [
-                'id' => $body['id'],
-                'name' => 'Super Product',
-                'price' => '23.30'
-            ]
-        );
-
-
-        $productData2 = [
-            'name' => 'cool product',
-            'price' => '10'
-        ];
-
-        $response = $this->json('put', '/api/products/40',$productData2); 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(422);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'code',
-            'title'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'code' => 'ERROR-1',
-            'title' => 'Unprocessable Entity'
-        ]);
-    }
-
-
-    public function test_client_edit_negative_price_product()
-    {
-        // Given
-        $productData = [
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ];
-
-        // When
-        $response = $this->json('POST', '/api/products', $productData); 
-
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(201);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ]);
-        
-        $body = $response->decodeResponseJson();
-
-        // Assert product is on the database
-        $this->assertDatabaseHas(
-            'products',
-            [
-                'id' => $body['id'],
-                'name' => 'Super Product',
-                'price' => '23.30'
-            ]
-        );
-
-
-        $productData2 = [
-            'name' => 'cool product',
-            'price' => '-10'
-        ];
-
-        $response = $this->json('put', '/api/products/4',$productData2); 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(422);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'code',
-            'title'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'code' => 'ERROR-1',
-            'title' => 'Unprocessable Entity'
-        ]);
-    }
-
-
-    public function test_client_edit_no_number_product()
-    {
-        // Given
-        $productData = [
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ];
-
-        // When
-        $response = $this->json('POST', '/api/products', $productData); 
-
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(201);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ]);
-        
-        $body = $response->decodeResponseJson();
-
-        // Assert product is on the database
-        $this->assertDatabaseHas(
-            'products',
-            [
-                'id' => $body['id'],
-                'name' => 'Super Product',
-                'price' => '23.30'
-            ]
-        );
-
-
-        $productData2 = [
-            'name' => 'cool product',
-            'price' => 'b'
-        ];
-
-        $response = $this->json('put', '/api/products/4',$productData2); 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(422);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'code',
-            'title'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'code' => 'ERROR-1',
-            'title' => 'Unprocessable Entity'
-        ]);
-    }
-
-    public function test_client_destroy()
-    {
-        // Given
-        $productData = [
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ];
-
-        // When
-        $response = $this->json('POST', '/api/products', $productData); 
-
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(201);
-        
-        // Assert the response has the correct structure
-        $response->assertJsonStructure([
-            'id',
-            'name',
-            'price'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'name' => 'Super Product',
-            'price' => '23.30'
-        ]);
-        
-        $body = $response->decodeResponseJson();
-
-        // Assert product is on the database
-        $this->assertDatabaseHas(
-            'products',
-            [
-                'id' => $body['id'],
-                'name' => 'Super Product',
-                'price' => '23.30'
-            ]
-        );
-
-        $response = $this->json('delete', '/api/products/5'); 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(200);
-        
-        $body = $response->decodeResponseJson();
-    }
-
-    public function test_client_destroy_inexistent_product()
-    {
-        $response = $this->json('delete', '/api/products/5'); 
-        // Then
-        // Assert it sends the correct HTTP Status
-        $response->assertStatus(404);
-
-         // Assert the response has the correct structure
-         $response->assertJsonStructure([
-            'code',
-            'title'
-        ]);
-
-        // Assert the product was created
-        // with the correct data
-        $response->assertJsonFragment([
-            'code' => 'ERROR-2',
-            'title' => 'Not Found'
-        ]);
-    }
 }

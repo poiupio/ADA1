@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Product;
 use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ProductController extends Controller
 {
@@ -15,9 +14,23 @@ class ProductController extends Controller
      */
     public function index()
     {
+        $datos['products'] = Product::paginate(20);
+        return view('index', $datos);
+         //return view('createProd');
         //
     }
-
+    
+        /**
+     * Display all resources.
+     *
+     * @param  \App\Product  $product
+     * @return \Illuminate\Http\Response
+     */
+    public function showAll(Product $product)
+    {
+        return $product->all();
+    }
+    
     /**
      * Show the form for creating a new resource.
      *
@@ -26,6 +39,7 @@ class ProductController extends Controller
     public function create()
     {
         //
+        return view('createProd');
     }
 
     /**
@@ -35,49 +49,14 @@ class ProductController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
-     {
-        if (is_null($request->name)) {
-                return response()->json([
-                    "errors"=> ["code"=> "ERROR-2",
-                    "title"=>  "Unprocessable Entity",
-                    ]]  , 422);
-        }elseif (is_null($request->price)) {
-                return response()->json([
-                    "errors"=> ["code"=> "ERROR-3",
-                    "title"=>  "Unprocessable Entity",
-                    ]]  , 422);
-        }elseif (!(is_numeric($request->price))) {
-                return response()->json([
-                   "errors"=> ["code"=> "ERROR-4",
-                   "title"=>  "Unprocessable Entity",
-                   ]]  , 422);
-        }elseif (($request->price)<=0) {
-                return response()->json([
-                    "errors"=> ["code"=> "ERROR-5",
-                    "title"=>  "Unprocessable Entity",
-                    ]]  , 422);
-        }else {
-            // Create a new product
-            $product = Product::create($request->all());
-
-            // Return a response with a product json
-            // representation and a 201 status code
-            return response()->json($product,201);
-        }
-
-     }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Product  $product
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Product $product)
     {
-        // Return a response with a product json
-        // representation and a 200 status code   
-        return $product->all();
+        
+        //$datosEmpleado = request()->all();
+        $datosEmpleado = Product::create(request()->all());
+       // Product::insert($datosEmpleado);
+        return response()->json($datosEmpleado,201);
+        
+      //  return redirect('/');
     }
 
     /**
@@ -86,20 +65,13 @@ class ProductController extends Controller
      * @param  \App\Product  $product
      * @return \Illuminate\Http\Response
      */
-    public function showItem(Product $product, $id)
+    public function show($id)
     {
-        try {
-            $producto = Product::findOrFail($id);
-            return $producto;
-        } catch (ModelNotFoundException $exception) {
-            $type = explode("\\", get_class($exception));
-            $type = $type[count($type)-1];
-            return response()->json([
-                "errors"=> ["code"=> "ERROR-2",
-                "title"=>  "Not Found",
-                "type" => $type
-                ]]  , 404);
-        }
+        //  public function show($id)
+
+        $producto = Product::findOrFail($id);
+        return response()->json($producto, 200);
+    
     }
 
     /**
@@ -108,9 +80,11 @@ class ProductController extends Controller
      * @param  \App\Product  $product
      * @return \Illuminate\Http\Response
      */
-    public function edit(Product $product)
+    public function edit($id)
     {
         //
+        $producto = Product::findOrFail($id);
+        return view('editProd', compact('producto'));
     }
 
     /**
@@ -122,25 +96,13 @@ class ProductController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if (!(is_numeric($request->price))) {
-                return response()->json([
-                "errors"=> ["code"=> "ERROR-1",
-                "title"=>  "Unprocessable Entity",
-                ]]  , 422);
-        }elseif (($request->price)<=0) {
-                return response()->json([
-                    "errors"=> ["code"=> "ERROR-5",
-                    "title"=>  "Unprocessable Entity",
-                    ]]  , 422);
-        }else{
-            $product = Product::findorfail($id);
-            $product->name=$request->name;
-            $product->price=$request->price;
-            $product->save();
-            // Return a response with a product json
-            // representation and a 201 status code   
-            return response()->json($product,200);
-        }
+        
+         $datosEmpleado = request()->except(['_token', '_method']);
+        Product::where('id', "=", $id)->update($datosEmpleado);
+                $producto = Product::findOrFail($id);
+         return response()->json($producto,201);
+        return view('editProd', compact('producto'));
+        //
     }
 
     /**
@@ -149,19 +111,11 @@ class ProductController extends Controller
      * @param  \App\Product  $product
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Product $product, $id)
+    public function destroy($id)
     {
-        // Return a response with a product json
-        // representation and a 200 status code   
-        if(!find($id)){
-            return response()->json([
-                "errors"=> ["code"=> "ERROR-2",
-                "title"=>  "Not Found",
-                ]]  , 404);
-        }
-        else{
-            Product::findOrFail($id);
-            return $product->destroy($id);
-        }
+        //
+        Product::destroy($id);
+        return response()->json(200);
+        return redirect('/');
     }
 }
